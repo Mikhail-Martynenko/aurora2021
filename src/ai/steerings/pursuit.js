@@ -1,6 +1,6 @@
 import Steering from "./steering.js";
 import Vector2 from 'phaser/src/math/Vector2'
-
+import Npc from "../../characters/npc";
 class Pursuit extends Steering {
 
     constructor (owner, objects, force = 1, ownerSpeed, targetSpeed) {

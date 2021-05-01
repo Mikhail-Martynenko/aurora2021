@@ -8,7 +8,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite{
     update() {
         const body = this.body;
         this.body.setVelocity(0);
-        const speed = this.maxSpeed;
+        const speed = this.maxSpeed+100;
         const cursors = this.cursors;
 
         if (cursors.left.isDown) {

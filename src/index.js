@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 
-import StartingScene from '../scenes/starting-scene';
+//import StartingScene from '../scenes/starting-scene';
+ import SteeringArrivalScene from "../scenes/steeringArrival";
 import CharacterMixin from '../src/characters/character.js';
 
 //https://github.com/mikewesthad/phaser-3-tilemap-blog-posts/blob/master/examples/post-1/05-physics/index.js
@@ -12,7 +13,7 @@ const config = {
   height: 600,
   pixelArt: true,
   zoom: 1.2,
-  scene: StartingScene,
+  scene: SteeringArrivalScene,//StartingScene
   physics: {
     default: "arcade",
     arcade: {
