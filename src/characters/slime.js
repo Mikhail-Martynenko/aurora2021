@@ -1,40 +1,107 @@
-const lag = 450;
-export default class Slime extends Phaser.Physics.Arcade.Sprite{
+import Vector2 from 'phaser/src/math/Vector2'
+
+const eps = 20;
+
+const delay = 500;
+
+
+export default class Slime extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, name, frame) {
         super(scene, x, y, name, frame);
         scene.physics.world.enable(this);
         scene.add.existing(this);
-        this.steering = undefined;
-        this.cnt = 0;
+        this.state = "";
+        this.hp = 100;
+        this.steerings = [];
     }
 
     update() {
-        if(this.steering){
-            const dir = this.steering.calculateImpulse(!this.cntLess(lag));
-            this.body.setVelocityX(dir.x)
-            this.body.setVelocityY(dir.y)
-            this.cnt = this.cntLess(lag) ? this.cnt + 1 : 0;
-        } else {
-            this.wantToJump = true;
+        let velocity = new Vector2(0, 0);
+
+        this.steerings.forEach(steering => {
+            velocity = velocity.add(steering.calculateImpulse())
+        });
+        let newVelocity = velocity
+            .normalize()
+            .multiply(new Vector2(this.speed, this.speed));
+        this.body.setVelocity(newVelocity.x, newVelocity.y);
+
+
+        switch (this.state) {
+            case 'rotate':
+                break
+
+            case 'middle range':
+                break
+
+            case 'rocket':
+                break
+
+            case 'short range':
+                break
+
+            case 'get close':
+                break
+
+            default:
+                break
+
         }
         this.updateAnimation();
     }
 
     updateAnimation() {
         const animsController = this.anims;
-        if (this.wantToJump){
-            animsController.play(this.animations[1], true);
-        } else {
-            animsController.play(this.animations[0], true);
+        try {
+            if (this.hp >= 0) {
+                animsController.play(this.animations[0], true);
+            } else {
+                animsController.play(this.animations[2], true);
+            }
+        } catch (e) {
+
         }
     }
 
-    hasArrived(){
-        return this.pointOfInterest === undefined
-            || this.pointOfInterest.distance(this.body.position) < 20;
+    hasArrived() {
+        return this.pointOfInterest === undefined || this.pointOfInterest.distance(this.body.position) < eps;
     }
 
-    cntLess(steps){
-        return this.cnt < steps;
+    selectNextLocation() {
+        const nextTile = this.path.shift();
+        if (nextTile) {
+            this.nextLocation = new Vector2(nextTile.x * 32, nextTile.y * 32);
+        } else {
+            this.nextLocation = this.body.position;
+        }
+    }
+
+    damage() {
+        if (this.hp > 0) {
+            this.hp = this.hp - 41
+        } else {
+            this.nextLocation = null
+            this.body.destroy()
+        }
+    }
+
+    selectTarget(target) {
+        this.target = target;
+        this.steerings.forEach(steering => steering.setTarget(target));
+    }
+
+    setObstacles(obstacles) {
+        this.steerings.forEach(steering => {
+
+            steering.setObstacles(obstacles);
+        });
+    }
+
+    setSteering(steering) {
+        this.steerings = [steering];
+    }
+
+    setSteerings(steerings) {
+        this.steerings = steerings;
     }
 }

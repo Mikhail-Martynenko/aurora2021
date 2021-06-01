@@ -8,7 +8,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite{
     update() {
         const body = this.body;
         this.body.setVelocity(0);
-        const speed = this.maxSpeed+100;
+        const speed = this.maxSpeed;
         const cursors = this.cursors;
 
         if (cursors.left.isDown) {
@@ -27,6 +27,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite{
         body.velocity.normalize().scale(speed);
         this.updateAnimation();
     };
+
     updateAnimation() {
         const animations = this.animationSets.get('Walk');
         const animsController = this.anims;
