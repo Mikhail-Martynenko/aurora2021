@@ -11,6 +11,13 @@ import slimeSpriteSheet from '../assets/sprites/characters/slime.png'
 import CharacterFactory from "../src/characters/character_factory";
 import Footsteps from "../assets/audio/footstep_ice_crunchy_run_01.wav";
 
+import Vector2 from "phaser/src/math/Vector2";
+
+import {LeaderFollowing} from "../src/ai/steerings/leaderFollowing";
+import { DecisionController } from "../src/ai/fuzzy/DecisionController";
+import UsualRules from "../src/ai/fuzzy/rules/usual";
+
+
 let StartingScene = new Phaser.Class({
 
     Extends: Phaser.Scene,
@@ -36,6 +43,7 @@ let StartingScene = new Phaser.Class({
         this.load.spritesheet('punk', punkSpriteSheet, this.characterFrameConfig);
         this.load.spritesheet('slime', slimeSpriteSheet, this.slimeFrameConfig);
         this.load.audio('footsteps', Footsteps);
+        this.load.glsl('fire', "./shaders/sample.frag");
     },
     create: function () {
 
@@ -69,29 +77,63 @@ let StartingScene = new Phaser.Class({
         worldLayer.setCollisionBetween(1, 500);
         aboveLayer.setDepth(10);
 
+
+
         this.physics.world.bounds.width = map.widthInPixels;
         this.physics.world.bounds.height = map.heightInPixels;
         this.characterFactory = new CharacterFactory(this);
 
         // Creating characters
         this.player = this.characterFactory.buildCharacter('aurora', 100, 100, {player: true});
+        this.player.speed = new Vector2(1);
         this.gameObjects.push(this.player);
         this.physics.add.collider(this.player, worldLayer);
 
         this.slimes =  this.physics.add.group();
         let params = {};
-        for(let i = 0; i < 30; i++) {
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! количество желешек здесь !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!111
+        const fakeSlime = {
+          x: 0,
+          y: 0,
+          speed: new Vector2(1),
+          body: {velocity: new Vector2()}
+        };
+        for(let i = 0; i < 20; i++) {
             const x = Phaser.Math.RND.between(50, this.physics.world.bounds.width - 50 );
             const y = Phaser.Math.RND.between(50, this.physics.world.bounds.height -50 );
-            params.slimeType = Phaser.Math.RND.between(0, 4);
+            params.slimeType = i === 0 ? 1 : 4//Phaser.Math.RND.between(0, 4);
             const slime = this.characterFactory.buildSlime(x, y, params);
+            slime.setSteerings([
+            //    new Pursuit(slime, [this.player], 1, slime.speed, this.player.speed)
+            //    new Arrive(slime, [this.player], 1, slime.speed, this.player.speed),
+            //    new Separation(slime, [this.player, this.slimes.children.entries], 1, slime.speed, this.player.speed)
+            //    new Evade(slime, [this.player], 1, slime.speed, this.player.speed)
+                new LeaderFollowing(slime, [this.player, this.slimes.children.entries, fakeSlime], 1, slime.speed, this.player.speed)
+            ]);
             this.slimes.add(slime);
             this.physics.add.collider(slime, worldLayer);
             this.gameObjects.push(slime);
         }
-        this.physics.add.collider(this.player, this.slimes);
 
-        this.input.keyboard.once("keydown_D", event => {
+        //adding controller
+        this.controller = new DecisionController(new UsualRules(), this.player, this.gameObjects)
+        this.controller.setScales();
+
+        this.physics.add.collider(this.player, this.slimes);
+        for (let i = 0; i < this.slimes.children.entries.length; i++) {
+            this.physics.add.collider(this.slimes.children.entries[i], this.slimes);
+            let otherSlimes = this.slimes.children.entries.slice();
+            otherSlimes.splice(i, 1);
+            this.slimes.children.entries[i].setSteerings([
+                //new Wander(this.slimes.children.entries[i], [], 10, 40, 50),
+                //new CollisionAvoidance(this.slimes.children.entries[i], [], 10, 40, 50)
+                //new Seek(slime, [], 10, 40, 50)
+            ]);
+            this.slimes.children.entries[i].selectTarget(this.player);
+            this.slimes.children.entries[i].setObstacles([this.player]);
+        }
+
+    //    this.input.keyboard.once("keydown_D", event => {
             // Turn on physics debugging to show player's hitbox
             this.physics.world.createDebugGraphic();
 
@@ -99,16 +141,20 @@ let StartingScene = new Phaser.Class({
                 .graphics()
                 .setAlpha(0.75)
                 .setDepth(20);
-        });
+      //  });
+    //    this.fire = this.add.shader('fire', 300, 50, 400, 400);
+
     },
     update: function () {
+        //changing states of slimes
+        this.controller.setState();
+        this.player.update();
         if (this.gameObjects)
         {
             this.gameObjects.forEach( function(element) {
                 element.update();
             });
         }
-
     },
     tilesToPixels(tileX, tileY)
     {
